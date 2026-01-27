@@ -39,17 +39,17 @@ The result is a hybrid workflow: fast, real-time rendering meets creative iterat
 
 This project uses the OpenAI API for AI-assisted asset generation. You need to provide your own API key to enable this functionality.
 
-### How to add your API key:
+### Use an environment variable (recommended)
 
-- Open `src/api.c`
-- Find the macro or variable where the API key is defined (e.g., `#define API_KEY "your_api_key_here"`)
-- Replace `"your_api_key_here"` with your actual OpenAI API key as a string.
+1. Create an OpenAI key at [https://platform.openai.com/account/api-keys](https://platform.openai.com/account/api-keys).
+2. Export it before running/building:
+   ```bash
+   export CUBAI_API_KEY="sk-..."
+   ```
+   To make it persistent, add that line to your shell profile (e.g. `~/.zshrc` or `~/.bashrc`) or use a tool like `direnv`.
+3. Build/run as usual (`make`, then `./cub3d ...`). The code reads `CUBAI_API_KEY` at runtime—no source edits needed.
 
-Alternatively, you can modify the code to load the key from an environment variable or a configuration file for better security.
-
-**Note:** Keep your API key private and never commit it to public repositories.
-
-If you don't have an API key, get one at [https://platform.openai.com/account/api-keys](https://platform.openai.com/account/api-keys).
+**Keep your API key private and never commit it.**
 
 
 ---

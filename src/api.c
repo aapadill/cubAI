@@ -3,8 +3,6 @@
 #include <string.h>
 #include <stdio.h>
 #include <cjson/cJSON.h>
-
-#define API_KEY ""
 // #define OUTPUT_PATH    "./textures/hand/generated.png"
 
 // Base64 decoding tables and functions
@@ -14,6 +12,15 @@ static const char encoding_table[] =
     "0123456789+/";
 static unsigned char *decoding_table = NULL;
 // static int mod_table[] = {0, 2, 1};
+
+static const char *get_api_key(void) {
+    const char *key = getenv("CUBAI_API_KEY");
+    if (!key || key[0] == '\0') {
+        fprintf(stderr, "❌ Missing API key: export CUBAI_API_KEY\n");
+        return NULL;
+    }
+    return key;
+}
 
 void build_decoding_table() {
     decoding_table = malloc(256);
@@ -84,9 +91,11 @@ int download_image(const char *url, const char *filename) {
 
 int generate_with_gpt_image(const char *prompt, const char *save_path) {
     CURL *curl = curl_easy_init(); if (!curl) return 1;
+    const char *api_key = get_api_key();
+    if (!api_key) { curl_easy_cleanup(curl); return 1; }
     struct curl_slist *headers = NULL;
     char auth_hdr[1024];
-    snprintf(auth_hdr, sizeof(auth_hdr), "Authorization: Bearer %s", API_KEY);
+    snprintf(auth_hdr, sizeof(auth_hdr), "Authorization: Bearer %s", api_key);
     headers = curl_slist_append(headers, "Content-Type: application/json");
     headers = curl_slist_append(headers, auth_hdr);
 
