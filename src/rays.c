@@ -81,16 +81,23 @@ void	draw_wall_texture(t_data *data, t_ray *ray, int screen_x, int vis_start_y, 
 	int			tex_y;
 	uint32_t	color;
 	uint32_t	shaded_color;
+	double		tex_pos;
+	double		tex_step;
+	double		factor;
+	int			tex_h;
+	int			tex_w;
 	bool		invisible;
 
 	invisible = false;
-	tex_x = ray->wall_x * ray->texture->width;
-	if (tex_x >= (int)ray->texture->width)
-		tex_x = ray->texture->width - 1;
+	tex_h = (int)ray->texture->height;
+	tex_w = (int)ray->texture->width;
+	tex_x = ray->wall_x * tex_w;
+	if (tex_x >= tex_w)
+		tex_x = tex_w - 1;
 	if (ray->is_door)
 	{
-		int offset = (int)(ray->door_progress * ray->texture->width);
-		tex_x = (tex_x + offset) % ray->texture->width;
+		int offset = (int)(ray->door_progress * tex_w);
+		tex_x = (tex_x + offset) % tex_w;
 		if (tex_x < offset)
 		{
 			invisible = true;
@@ -100,16 +107,27 @@ void	draw_wall_texture(t_data *data, t_ray *ray, int screen_x, int vis_start_y, 
 			ray->is_door = true; // Necessary?
 		}
 	}
+	factor = ray->distance * 0.4;
+	if (factor < 1.0)
+		factor = 1.0;
+	else
+		factor = 1.0 / factor;
+	tex_step = (double)tex_h / (double)wall_height;
+	tex_pos = (vis_start_y - orig_start_y) * tex_step;
 	y = vis_start_y;
 	while (y <= vis_end_y)
 	{
-		// Compute the texture y-coordinate using the original (unclipped) wall parameters
-		tex_y = ((y - orig_start_y) * ray->texture->height) / wall_height;
-		if (tex_y >= (int)ray->texture->height)
-			tex_y = ray->texture->height - 1;
+		tex_y = (int)tex_pos;
+		if (tex_y >= tex_h)
+			tex_y = tex_h - 1;
 		color = get_texture_color(ray->texture, tex_x, tex_y);
-		shaded_color = simple_shading(color, ray->distance);
+		shaded_color = get_rgba(
+				(uint8_t)(get_r(color) * factor),
+				(uint8_t)(get_g(color) * factor),
+				(uint8_t)(get_b(color) * factor),
+				get_a(color));
 		mlx_put_pixel(data->image, screen_x, y, shaded_color);
+		tex_pos += tex_step;
 		y++;
 	}
 }
