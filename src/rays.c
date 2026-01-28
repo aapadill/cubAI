@@ -86,26 +86,34 @@ void	draw_wall_texture(t_data *data, t_ray *ray, int screen_x, int vis_start_y, 
 	double		factor;
 	int			tex_h;
 	int			tex_w;
-	bool		invisible;
+	double		door_progress;
+	double		local_x;
+	bool		is_door;
 
-	invisible = false;
+	is_door = ray->is_door;
 	tex_h = (int)ray->texture->height;
 	tex_w = (int)ray->texture->width;
-	tex_x = ray->wall_x * tex_w;
-	if (tex_x >= tex_w)
-		tex_x = tex_w - 1;
-	if (ray->is_door)
+	if (is_door)
 	{
-		int offset = (int)(ray->door_progress * tex_w);
-		tex_x = (tex_x + offset) % tex_w;
-		if (tex_x < offset)
-		{
-			invisible = true;
-			(void)invisible;
-			ray->is_door = false;
-			ray->texture = get_wall_texture(data, ray);
-			ray->is_door = true; // Necessary?
-		}
+		door_progress = ray->door_progress;
+		if (door_progress < 0.0)
+			door_progress = 0.0;
+		else if (door_progress > 1.0)
+			door_progress = 1.0;
+		local_x = ray->wall_x - door_progress;
+		if (local_x < 0.0)
+			local_x = 0.0;
+		else if (local_x > 1.0)
+			local_x = 1.0;
+		tex_x = (int)(local_x * tex_w);
+		if (tex_x >= tex_w)
+			tex_x = tex_w - 1;
+	}
+	else
+	{
+		tex_x = ray->wall_x * tex_w;
+		if (tex_x >= tex_w)
+			tex_x = tex_w - 1;
 	}
 	factor = ray->distance * 0.4;
 	if (factor < 1.0)

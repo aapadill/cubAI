@@ -80,12 +80,32 @@ void	calculate_ray_data(t_data *data, double ray_dir_x, double ray_dir_y, t_ray 
 			break;
 		else if (cell == 'D') //this is a door
 		{
-			ray->door_progress = lookup_door_progress(data, map_x, map_y);
-			if (ray->door_progress <= 1)
+			double	door_progress;
+			double	door_dist;
+			double	wall_x;
+
+			door_progress = lookup_door_progress(data, map_x, map_y);
+			if (door_progress >= 1.0)
+				continue;
+			if (door_progress < 0.0)
+				door_progress = 0.0;
+			if (ray->side == 0)
 			{
-				ray->is_door = true;
-				break;
+				door_dist = (map_x - data->player.x + (1 - step_x) / 2) / ray->dir_x;
+				wall_x = data->player.y + door_dist * ray->dir_y;
+				wall_x -= floor(wall_x);
 			}
+			else
+			{
+				door_dist = (map_y - data->player.y + (1 - step_y) / 2) / ray->dir_y;
+				wall_x = data->player.x + door_dist * ray->dir_x;
+				wall_x -= floor(wall_x);
+			}
+			if (wall_x < door_progress)
+				continue;
+			ray->is_door = true;
+			ray->door_progress = door_progress;
+			break;
 		}
 	}
 	if (ray->side == 0)
