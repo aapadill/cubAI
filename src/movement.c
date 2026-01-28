@@ -114,36 +114,52 @@ static void handle_movement(t_data *data)
 	double orig_y;
 	double new_x;
 	double new_y;
+	double dir_x;
+	double dir_y;
+	double right_x;
+	double right_y;
+	double move_x;
+	double move_y;
+	double len;
+	int input_f;
+	int input_s;
 
 	orig_x = data->player.x;
 	orig_y = data->player.y;
+	input_f = 0;
+	input_s = 0;
 	if (mlx_is_key_down(data->mlx, MLX_KEY_W))
-	{
-		new_x = orig_x + cos(data->player.angle) * data->player.speed;
-		new_y = orig_y + sin(data->player.angle) * data->player.speed;
-	}
-	else if (mlx_is_key_down(data->mlx, MLX_KEY_S))
-	{
-		new_x = orig_x - cos(data->player.angle) * data->player.speed;
-		new_y = orig_y - sin(data->player.angle) * data->player.speed;
-	}
-	else if (mlx_is_key_down(data->mlx, MLX_KEY_D))
-	{
-		new_x = orig_x - sin(data->player.angle) * data->player.speed;
-		new_y = orig_y + cos(data->player.angle) * data->player.speed;
-	}
-	else if (mlx_is_key_down(data->mlx, MLX_KEY_A))
-	{
-		new_x = orig_x + sin(data->player.angle) * data->player.speed;
-		new_y = orig_y - cos(data->player.angle) * data->player.speed;
-	}
-	else
+		input_f += 1;
+	if (mlx_is_key_down(data->mlx, MLX_KEY_S))
+		input_f -= 1;
+	if (mlx_is_key_down(data->mlx, MLX_KEY_D))
+		input_s += 1;
+	if (mlx_is_key_down(data->mlx, MLX_KEY_A))
+		input_s -= 1;
+	if (input_f == 0 && input_s == 0)
 	{
 		data->is_player_moving = false;
-		return; // No forward/backward movement
+		return;
 	}
+	dir_x = cos(data->player.angle);
+	dir_y = sin(data->player.angle);
+	right_x = -dir_y;
+	right_y = dir_x;
+	move_x = dir_x * input_f + right_x * input_s;
+	move_y = dir_y * input_f + right_y * input_s;
+	len = sqrt(move_x * move_x + move_y * move_y);
+	if (len == 0.0)
+	{
+		data->is_player_moving = false;
+		return;
+	}
+	move_x = (move_x / len) * data->player.speed;
+	move_y = (move_y / len) * data->player.speed;
+	new_x = orig_x + move_x;
+	new_y = orig_y + move_y;
 
 	// Try moving diagonally first
+	data->is_player_moving = false;
 	if (can_move_to(data, new_x, new_y))
 	{
 		data->player.x = new_x;
@@ -439,7 +455,6 @@ static void	render(t_data *data)
 		data->image = mlx_new_image(data->mlx, data->new_width, data->new_height);
 		mlx_image_to_window(data->mlx, data->image, 0, 0);
 		//if (!data->image)
-		data->player.speed = (double)data->height * PLAYER_SPEED;
 		data->camera.x = data->width / 2;
 		data->camera.y = data->height / 2;
 		printf("Render will now happen with %dx%d\n", data->width, data->height);

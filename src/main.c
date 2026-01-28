@@ -28,6 +28,22 @@ void	free_textures(t_textures *textures)
 
 //try many doors
 //use argv[1] as cubfile
+static void	init_player_speed(t_data *data)
+{
+	int		max_dim;
+	double	speed;
+
+	max_dim = data->map.width;
+	if (data->map.height > max_dim)
+		max_dim = data->map.height;
+	speed = PLAYER_SPEED_BASE + (double)max_dim * PLAYER_SPEED_PER_TILE;
+	if (speed < PLAYER_SPEED_MIN)
+		speed = PLAYER_SPEED_MIN;
+	else if (speed > PLAYER_SPEED_MAX)
+		speed = PLAYER_SPEED_MAX;
+	data->player.speed = speed;
+}
+
 bool	initializer(t_data *data, char *filename, bool strict)
 {
 	int	monitor_width;
@@ -37,7 +53,6 @@ bool	initializer(t_data *data, char *filename, bool strict)
 	status = 0;
 	ft_memset(data, 0, sizeof(t_data));
 	data->strict = strict;
-	data->player.speed = 0.025;
 	data->mlx = mlx_init(MIN_WIDTH, MIN_HEIGHT, "Cub3D Ray-Casting", true);
 	data->window_time = mlx_get_time();
 	if (!data->mlx)
@@ -67,6 +82,7 @@ bool	initializer(t_data *data, char *filename, bool strict)
 			free_textures(data->textures);
 		return (EXIT_FAILURE);
 	}
+	init_player_speed(data);
 	mlx_get_monitor_size(0, &monitor_width, &monitor_height);
 	data->width = monitor_width * 0.5;
 	data->height = monitor_height * 0.5;
