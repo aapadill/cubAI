@@ -19,22 +19,29 @@ void	draw_walls_and_sprites(t_data *data)
 	double	plane_x;
 	double	plane_y;
 	int		screen_x;
+	int		offset_x;
 
 	dir_x = cos(data->player.angle);
 	dir_y = sin(data->player.angle);
 	plane_x = -dir_y * tan(FOV / 2.0);
 	plane_y = dir_x * tan(FOV / 2.0);
+	offset_x = (int)data->camera.world_offset_x;
+	for (int i = 0; i < data->width; i++)
+		data->zBuffer[i] = DBL_MAX;
 	screen_x = 0;
 	while (screen_x < data->width)
 	{
 		double	camera_x;
 		double	ray_dir_x;
 		double	ray_dir_y;
+		int		draw_x;
 
 		camera_x = 2.0 * screen_x / (double)data->width - 1.0;
 		ray_dir_x = dir_x + plane_x * camera_x;
 		ray_dir_y = dir_y + plane_y * camera_x;
-		draw_wall_column(data, ray_dir_x, ray_dir_y, screen_x);
+		draw_x = screen_x + offset_x;
+		if (draw_x >= 0 && draw_x < data->width)
+			draw_wall_column(data, ray_dir_x, ray_dir_y, draw_x);
 		screen_x++;
 	}
 	draw_sprites(data, dir_x, dir_y, plane_x, plane_y);
@@ -49,6 +56,8 @@ void	draw_wall_column(t_data *data, double ray_dir_x, double ray_dir_y, int scre
 	int		vis_end_y;
 	int		wall_height;
 	int		center_y;
+	double	roll_offset;
+	double	half_w;
 
 	// Calculate ray properties
 	calculate_ray_data(data, ray_dir_x, ray_dir_y, &ray);
@@ -58,7 +67,11 @@ void	draw_wall_column(t_data *data, double ray_dir_x, double ray_dir_y, int scre
 	wall_height = (int)(data->height / ray.distance);
 	//orig_start_y = (data->height / 2) - (wall_height / 2);
 	//orig_end_y = (data->height / 2) + (wall_height / 2);
-	center_y = (int)(data->height / 2 + data->camera.shake_offset);
+	half_w = data->width / 2.0;
+	roll_offset = 0.0;
+	if (half_w > 0.0)
+		roll_offset = data->camera.roll * ((screen_x - half_w) / half_w);
+	center_y = (int)(data->height / 2 + data->camera.world_offset_y + roll_offset);
 	orig_start_y = center_y - (wall_height / 2);
 	orig_end_y = center_y + (wall_height / 2);
 

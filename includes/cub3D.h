@@ -6,7 +6,7 @@
 /*   By: djelacik <djelacik@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/12/30 16:01:21 by djelacik          #+#    #+#             */
-/*   Updated: 2025/02/21 14:55:18 by aapadill         ###   ########.fr       */
+/*   Updated: 2026/01/28 07:29:45 by aapadill         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -67,10 +67,32 @@
 #define PIX_WALK 3
 #define SHAKE_VEL_WALK 10
 #define SHAKE_VEL_RECO 50
+#define VIEW_BOB_FREQ 9.0
+#define VIEW_BOB_AMP_X 2.5
+#define VIEW_BOB_AMP_Y 4.0
+#define VIEW_SWAY_SCALE 7.0
+#define VIEW_SWAY_MAX 6.0
+#define VIEW_ROLL_SCALE 7.5
+#define VIEW_ROLL_MAX 18.0
+#define VIEW_SMOOTH 11.0
+#define HUD_BOB_AMP_X 4.5
+#define HUD_BOB_AMP_Y 7.0
+#define HUD_SMOOTH 16.0
+#define HUD_ROLL_SCALE 1.3
+#define HUD_ROLL_MAX 8.0
+#define RECOIL_WORLD_SCALE 0.4
+#define RECOIL_HUD_SCALE 1.0
 
 #define VEC_INIT_SIZE 4
 
 #define ENEMY_SPEED  0.005
+
+#define ENEMY_ANIM_ENABLED 1
+#define ENEMY_ANIM_DIRS 4
+#define ENEMY_ANIM_FRAMES 4
+#define ENEMY_ANIM_TICK 6
+#define ENEMY_ANIM_FRONT_ONLY 1
+
 # define MAX_NAME_LEN 20
 
 // #define IMAGE_BASE_64 "iVBORw0KGgoAAAANSUhEUgAAAMAAAADACAMAAABlApw1AAAAIGNIUk0AAHomAACAhAAA+gAAAIDoAAB1MAAA6mAAADqYAAAXcJy6UTwAAAByUExURQAAAJgAAPwAAOwAAPycnPxUVPxcXPz8VKioqHx8fIyMjNDQ0LS0tEhISCwsLJiYmGRkZFRUVHBwcAAAACAgIKhoQPCUXLRwRPywgFQ8HPykcPzEpPzYxMh8THRMKIBQLOiMWNyIVPy4kPycYKBkPP///6i6Sn8AAAABdFJOUwBA5thmAAAAAWJLR0QlwwHJDwAAAAd0SU1FB+kDEQgvDTAkv6gAAAI4SURBVHja7dpbb6pQFEXhejsqgorXem29/P/f2BlW2Nk1lmL6sCBnfA+E0D7MkYDHU317AwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADgf9LpdLwnEOA94W/ru91uixsIcKLRdtLr9fr9vo4P15uOgAYYDAb/CgqwE13xHkWA96hX2N0vw+FQR60PT0I7EOBK//RqsaaPRqPxeKyjztvUQID3env11O4kSSaTiY46t9fTFryxI6ABtFK3u+7+NE0VoKPOdaUd6wlojCzLQoDOvecQ4D3nReOCdoejeI8iwHtUbdPpVHNns9m0NJ/PdSXPc+9pBHhPeyVAb+AWi4VOdLSA1ryYEuAtBMxKFqDr3tMI8J5WO0C3u3aPSllhuVx6TyPAe1rtgNVqZa+bYbqu6Lher73XEeC97jebzcYC9NIZ3szFAdvt1nsjAd4bK9e/F54G7HY7Agiott/vD4fD8Xg8nU7LyKpwPp+3Je+lBHgv/TlAD8CxoIaPkhZ/Fi6Xi64TQEDF+hBg9Ehcr1dd1E9DAwEEVARoYtwQB9xut/AYeI8lwHvszwF2r79/Z+sJIKBa+M+AbY3XE0BAHeGP6fb3UK3cfBd+oaEfGxPgvd526yRJEvtgb1243+86j3/BGnTRezUB3qufrbdxFpDneZZl9gmfffky/uSvQQ0ENGx9HCAhwB4PEz4/9v8KCwHeAbb44e43cYAdn76YOn+LhQDXgDRN6zwD5uHdXhzg1kDAXwO+AI+nxgq+cWFMAAAAJXRFWHRkYXRlOmNyZWF0ZQAyMDI1LTAzLTE3VDA4OjQ3OjA4KzAwOjAwpfXRXAAAACV0RVh0ZGF0ZTptb2RpZnkAMjAyNS0wMy0xN1QwODo0NzowOCswMDowMNSoaeAAAAAodEVYdGRhdGU6dGltZXN0YW1wADIwMjUtMDMtMTdUMDg6NDc6MTMrMDA6MDBNEBxbAAAAJ3RFWHR3ZWJwOm11eC1ibGVuZABBdG9wQmFja2dyb3VuZEFscGhhQmxlbmSzunTVAAAAAElFTkSuQmCC"
@@ -100,8 +122,17 @@ typedef struct s_view {
 	int32_t		x;
     int32_t		y;
 	int8_t		toggle;
-	double		shake_offset;
-	double		shake_time;
+	double		world_offset_x;
+	double		world_offset_y;
+	double		hud_offset_x;
+	double		hud_offset_y;
+	double		bob_phase;
+	double		recoil_phase;
+	double		roll;
+	double		hud_roll;
+	double		prev_angle;
+	double		prev_px;
+	double		prev_py;
 }	t_view;
 
 // typedef struct s_sprite {
@@ -134,6 +165,13 @@ typedef struct s_sprite {
 	double	y;
 	int		texture;
 }	t_sprite;
+
+typedef enum e_enemy_dir {
+	ENEMY_DIR_FRONT,
+	ENEMY_DIR_RIGHT,
+	ENEMY_DIR_BACK,
+	ENEMY_DIR_LEFT
+}	t_enemy_dir;
 
 typedef struct s_map {
 	char	**grid;
@@ -191,6 +229,14 @@ typedef struct s_data {
 	mlx_texture_t	**sprite_textures;
 
 	mlx_texture_t **enemy;
+	bool			enemy_anim_enabled;
+	int				enemy_anim_frames;
+	int				enemy_anim_dirs;
+	int				enemy_anim_dir;
+	int				enemy_anim_frame;
+	int				enemy_anim_timer;
+	double			enemy_prev_x;
+	double			enemy_prev_y;
 
 	mlx_texture_t **hud_hands;
 	mlx_texture_t **ai_hands;

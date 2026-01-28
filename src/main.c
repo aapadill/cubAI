@@ -44,6 +44,93 @@ static void	init_player_speed(t_data *data)
 	data->player.speed = speed;
 }
 
+static void	free_enemy_anim(mlx_texture_t **frames, int count)
+{
+	int	i;
+
+	i = 0;
+	while (i < count)
+	{
+		if (frames[i])
+			mlx_delete_texture(frames[i]);
+		i++;
+	}
+}
+
+static void	init_enemy_anim(t_data *data)
+{
+	static const char	*dirs_all[ENEMY_ANIM_DIRS] = {
+		"front", "right", "back", "left"
+	};
+	static const char	*dirs_front[1] = {
+		"front"
+	};
+	char				path[256];
+	int					total;
+	int					i;
+	int					d;
+	int					f;
+	int					dirs_count;
+	const char			**dirs;
+
+	data->enemy_anim_enabled = ENEMY_ANIM_ENABLED;
+	data->enemy_anim_frames = ENEMY_ANIM_FRAMES;
+	if (ENEMY_ANIM_FRONT_ONLY)
+	{
+		dirs = dirs_front;
+		dirs_count = 1;
+	}
+	else
+	{
+		dirs = dirs_all;
+		dirs_count = ENEMY_ANIM_DIRS;
+	}
+	data->enemy_anim_dirs = dirs_count;
+	data->enemy_anim_dir = ENEMY_DIR_FRONT;
+	data->enemy_anim_frame = 0;
+	data->enemy_anim_timer = 0;
+	if (!data->enemy_anim_enabled)
+	{
+		data->enemy = NULL;
+		return ;
+	}
+	total = dirs_count * data->enemy_anim_frames;
+	data->enemy = gc_calloc((size_t)total, sizeof(mlx_texture_t *));
+	if (!data->enemy)
+	{
+		data->enemy_anim_enabled = false;
+		data->enemy = NULL;
+		return ;
+	}
+	i = 0;
+	d = 0;
+	while (d < dirs_count)
+	{
+		f = 0;
+		while (f < data->enemy_anim_frames)
+		{
+			snprintf(path, sizeof(path), "textures/enemy/%s_%02d.png", dirs[d], f);
+			data->enemy[i] = mlx_load_png(path);
+			if (!data->enemy[i])
+			{
+				snprintf(path, sizeof(path), "textures/enemy/%s/%s_%02d.png",
+					dirs[d], dirs[d], f);
+				data->enemy[i] = mlx_load_png(path);
+				if (!data->enemy[i])
+				{
+					free_enemy_anim(data->enemy, total);
+					data->enemy_anim_enabled = false;
+					data->enemy = NULL;
+					return ;
+				}
+			}
+			i++;
+			f++;
+		}
+		d++;
+	}
+}
+
 bool	initializer(t_data *data, char *filename, bool strict)
 {
 	int	monitor_width;
@@ -111,6 +198,8 @@ bool	initializer(t_data *data, char *filename, bool strict)
 	data->sprites[2].x = 2.5;
 	data->sprites[2].y = 5.5;
 	data->sprites[2].texture = 2;
+	data->enemy_prev_x = data->sprites[0].x;
+	data->enemy_prev_y = data->sprites[0].y;
 	data->zBuffer = gc_alloc(sizeof(double) * data->width);
 	data->sprite_textures = gc_alloc(sizeof(mlx_texture_t *) * 3);
 	data->sprite_textures[0] = mlx_load_png("textures/pics/enemyfinal.png");
@@ -118,8 +207,7 @@ bool	initializer(t_data *data, char *filename, bool strict)
 	data->sprite_textures[2] = mlx_load_png("textures/pics/barrel.png");
 	/* sprite hardcoded try */
 
-	/* enemy */
-	data->enemy = gc_alloc(sizeof(mlx_texture_t *) * 3);
+	init_enemy_anim(data);
 
 	/* ai hands */
 	data->ai_hands = gc_alloc(sizeof(mlx_texture_t *) * 4);
@@ -141,6 +229,9 @@ bool	initializer(t_data *data, char *filename, bool strict)
 		free_textures(data->textures);
 		return (EXIT_FAILURE);
 	}
+	data->camera.prev_angle = data->player.angle;
+	data->camera.prev_px = data->player.x;
+	data->camera.prev_py = data->player.y;
 	return (EXIT_SUCCESS);
 }
 

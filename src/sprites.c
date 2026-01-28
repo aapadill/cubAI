@@ -12,6 +12,23 @@
 
 #include "cub3D.h"
 
+static mlx_texture_t	*get_sprite_texture(t_data *data, int index)
+{
+	int	total;
+	int	anim_index;
+
+	if (index == 0 && data->enemy_anim_enabled && data->enemy
+		&& data->enemy_anim_frames > 0)
+	{
+		total = data->enemy_anim_dirs * data->enemy_anim_frames;
+		anim_index = data->enemy_anim_dir * data->enemy_anim_frames
+			+ data->enemy_anim_frame;
+		if (anim_index >= 0 && anim_index < total && data->enemy[anim_index])
+			return (data->enemy[anim_index]);
+	}
+	return (data->sprite_textures[data->sprites[index].texture]);
+}
+
 void	draw_sprites(t_data *data, double dir_x, double dir_y, double plane_x, double plane_y)
 {
 	typedef struct s_sprite_proj {
@@ -49,12 +66,18 @@ void	draw_sprites(t_data *data, double dir_x, double dir_y, double plane_x, doub
 		if (transform_y <= 0)
 			continue;
 		int sprite_screen_x = (int)(((double)data->width / 2.0)
-				* (1 + transform_x / transform_y));
+				* (1 + transform_x / transform_y) + data->camera.world_offset_x);
 		int sprite_height = abs((int)(data->height / transform_y));
-		int draw_start_y = -sprite_height / 2 + data->height / 2;
+		double half_w = data->width / 2.0;
+		double roll_offset = 0.0;
+		if (half_w > 0.0)
+			roll_offset = data->camera.roll * ((sprite_screen_x - half_w) / half_w);
+		int draw_start_y = -sprite_height / 2
+			+ (int)(data->height / 2 + data->camera.world_offset_y + roll_offset);
 		if (draw_start_y < 0)
 			draw_start_y = 0;
-		int draw_end_y = sprite_height / 2 + data->height / 2;
+		int draw_end_y = sprite_height / 2
+			+ (int)(data->height / 2 + data->camera.world_offset_y + roll_offset);
 		if (draw_end_y >= data->height)
 			draw_end_y = data->height - 1;
 		int sprite_width = abs((int)(data->height / transform_y));
@@ -90,7 +113,7 @@ void	draw_sprites(t_data *data, double dir_x, double dir_y, double plane_x, doub
 	for (int i = 0; i < count; i++)
 	{
 		t_sprite_proj *sp = &sprites[i];
-		mlx_texture_t *tex = data->sprite_textures[data->sprites[sp->index].texture];
+		mlx_texture_t *tex = get_sprite_texture(data, sp->index);
 		for (int x = sp->draw_start_x; x < sp->draw_end_x; x++)
 		{
 			int tex_x = (int)(256 * (x - (-sp->sprite_width / 2

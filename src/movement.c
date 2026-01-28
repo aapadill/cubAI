@@ -183,16 +183,73 @@ static void handle_movement(t_data *data)
 	}
 }
 
+static int	enemy_dir_from_move(t_data *data, double vx, double vy)
+{
+	double	dir_x;
+	double	dir_y;
+	double	right_x;
+	double	right_y;
+	double	dot_f;
+	double	dot_r;
+
+	dir_x = cos(data->player.angle);
+	dir_y = sin(data->player.angle);
+	right_x = -dir_y;
+	right_y = dir_x;
+	dot_f = vx * dir_x + vy * dir_y;
+	dot_r = vx * right_x + vy * right_y;
+	if (fabs(dot_f) >= fabs(dot_r))
+	{
+		if (dot_f < 0.0)
+			return (ENEMY_DIR_FRONT);
+		return (ENEMY_DIR_BACK);
+	}
+	if (dot_r > 0.0)
+		return (ENEMY_DIR_RIGHT);
+	return (ENEMY_DIR_LEFT);
+}
+
+static void	update_enemy_anim(t_data *data, double vx, double vy)
+{
+	double	len2;
+
+	if (!data->enemy_anim_enabled)
+		return ;
+	len2 = vx * vx + vy * vy;
+	if (len2 < 1e-6)
+	{
+		data->enemy_anim_frame = 0;
+		data->enemy_anim_timer = 0;
+		return ;
+	}
+	if (data->enemy_anim_dirs <= 1 || ENEMY_ANIM_FRONT_ONLY)
+		data->enemy_anim_dir = ENEMY_DIR_FRONT;
+	else
+		data->enemy_anim_dir = enemy_dir_from_move(data, vx, vy);
+	data->enemy_anim_timer++;
+	if (data->enemy_anim_timer >= ENEMY_ANIM_TICK)
+	{
+		data->enemy_anim_timer = 0;
+		data->enemy_anim_frame++;
+		if (data->enemy_anim_frame >= data->enemy_anim_frames)
+			data->enemy_anim_frame = 0;
+	}
+}
+
 static void handle_enemy(t_data *data)
 {
     // assume sprite 0 is the enemy
     double *ex = &data->sprites[0].x;
     double *ey = &data->sprites[0].y;
+	double	prev_x;
+	double	prev_y;
 
     // vector from enemy to player
     double dx = data->player.x - *ex;
     double dy = data->player.y - *ey;
 
+	prev_x = *ex;
+	prev_y = *ey;
     double dist2 = dx * dx + dy * dy;
     if (dist2 < 4.0 && dist2 > 0.25)  // only chase if “close enough” and avoid div0
     {
@@ -205,29 +262,107 @@ static void handle_enemy(t_data *data)
         *ex += nx * ENEMY_SPEED;
         *ey += ny * ENEMY_SPEED;
     }
+	update_enemy_anim(data, *ex - prev_x, *ey - prev_y);
+	data->enemy_prev_x = *ex;
+	data->enemy_prev_y = *ey;
+}
+
+static double	smooth_to(double current, double target, double sharpness, double dt)
+{
+	double	t;
+
+	t = 1.0 - exp(-sharpness * dt);
+	return current + (target - current) * t;
+}
+
+static double	clamp_double(double v, double lo, double hi)
+{
+	if (v < lo)
+		return (lo);
+	if (v > hi)
+		return (hi);
+	return (v);
 }
 
 static void handle_shake(t_data *data)
 {
-	if (data->is_player_moving)
+	double	now;
+	double	dt;
+	double	dx;
+	double	dy;
+	double	speed;
+	double	bob_x;
+	double	bob_y;
+	double	hud_bob_x;
+	double	hud_bob_y;
+	double	ang_delta;
+	double	ang_vel;
+	double	sway_x;
+	double	recoil;
+	double	roll_target;
+	double	hud_roll_target;
+	double	target_world_x;
+	double	target_world_y;
+	double	target_hud_x;
+	double	target_hud_y;
+
+	now = mlx_get_time();
+	dt = now - data->window_time;
+	if (dt < 0.0)
+		dt = 0.0;
+	else if (dt > 0.05)
+		dt = 0.05;
+	data->window_time = now;
+	dx = data->player.x - data->camera.prev_px;
+	dy = data->player.y - data->camera.prev_py;
+	speed = 0.0;
+	if (dt > 0.0)
+		speed = sqrt(dx * dx + dy * dy) / dt;
+	if (speed > 0.0001)
+		data->camera.bob_phase += speed * VIEW_BOB_FREQ * dt;
+	bob_x = sin(data->camera.bob_phase * 0.5) * VIEW_BOB_AMP_X;
+	bob_y = sin(data->camera.bob_phase) * VIEW_BOB_AMP_Y;
+	hud_bob_x = sin(data->camera.bob_phase * 0.5) * HUD_BOB_AMP_X;
+	hud_bob_y = sin(data->camera.bob_phase) * HUD_BOB_AMP_Y;
+	ang_delta = data->player.angle - data->camera.prev_angle;
+	while (ang_delta > M_PI)
+		ang_delta -= 2 * M_PI;
+	while (ang_delta < -M_PI)
+		ang_delta += 2 * M_PI;
+	ang_vel = 0.0;
+	if (dt > 0.0)
+		ang_vel = ang_delta / dt;
+	sway_x = clamp_double(ang_vel * VIEW_SWAY_SCALE, -VIEW_SWAY_MAX, VIEW_SWAY_MAX);
+	roll_target = clamp_double(ang_vel * VIEW_ROLL_SCALE, -VIEW_ROLL_MAX, VIEW_ROLL_MAX);
+	hud_roll_target = clamp_double(-ang_vel * HUD_ROLL_SCALE, -HUD_ROLL_MAX, HUD_ROLL_MAX);
+	recoil = 0.0;
+	if (data->is_player_shooting)
 	{
-		data->camera.shake_time += SEC_PER_FRAME;
-		data->camera.shake_offset = sin(data->camera.shake_time * SHAKE_VEL_WALK) * PIX_WALK;
-		if (data->is_player_shooting)
-			data->camera.shake_offset += sin(data->camera.shake_time * SHAKE_VEL_RECO) * PIX_RECOIL;
-		//printf("Shake time: %f\n", data->camera.shake_time);
-	}
-	else if (data->is_player_shooting)
-	{
-		data->camera.shake_time += SEC_PER_FRAME;
-		data->camera.shake_offset = sin(data->camera.shake_time * SHAKE_VEL_RECO) * PIX_RECOIL;
-		//printf("Shake time: %f\n", data->camera.shake_time);
+		data->camera.recoil_phase += dt * SHAKE_VEL_RECO;
+		recoil = sin(data->camera.recoil_phase) * PIX_RECOIL;
 	}
 	else
 	{
-		data->camera.shake_time = 0;
-		data->camera.shake_offset = 0;
+		data->camera.recoil_phase = 0.0;
 	}
+	target_world_x = bob_x + sway_x;
+	target_world_y = bob_y + recoil * RECOIL_WORLD_SCALE;
+	target_hud_x = hud_bob_x + sway_x * 0.3;
+	target_hud_y = hud_bob_y + recoil * RECOIL_HUD_SCALE;
+	data->camera.world_offset_x = smooth_to(data->camera.world_offset_x,
+			target_world_x, VIEW_SMOOTH, dt);
+	data->camera.world_offset_y = smooth_to(data->camera.world_offset_y,
+			target_world_y, VIEW_SMOOTH, dt);
+	data->camera.roll = smooth_to(data->camera.roll, roll_target, VIEW_SMOOTH, dt);
+	data->camera.hud_offset_x = smooth_to(data->camera.hud_offset_x,
+			target_hud_x, HUD_SMOOTH, dt);
+	data->camera.hud_offset_y = smooth_to(data->camera.hud_offset_y,
+			target_hud_y, HUD_SMOOTH, dt);
+	data->camera.hud_roll = smooth_to(data->camera.hud_roll,
+			hud_roll_target, HUD_SMOOTH, dt);
+	data->camera.prev_angle = data->player.angle;
+	data->camera.prev_px = data->player.x;
+	data->camera.prev_py = data->player.y;
 }
 
 void *ai_worker(void *arg)
@@ -242,13 +377,11 @@ void *ai_worker(void *arg)
         stat(archive_dir, &st) == 0 && S_ISDIR(st.st_mode))
     {
         char base_dest[PATH_MAX], dest[PATH_MAX];
-        snprintf(base_dest, sizeof(base_dest),
-                 "%s/hand_sheet.png", archive_dir);
+        snprintf(base_dest, sizeof(base_dest), "%s/hand_sheet.png", archive_dir);
 
         if (access(base_dest, F_OK) == 0) {
             time_t t = time(NULL);
-            snprintf(dest, sizeof(dest),
-                     "%s/hand_sheet_%ld.png", archive_dir, (long)t);
+            snprintf(dest, sizeof(dest), "%s/hand_sheet_%ld.png", archive_dir, (long)t);
         } else {
             strcpy(dest, base_dest);
         }
@@ -310,8 +443,7 @@ void *ai_worker(void *arg)
                 }
 
                 char outpath[PATH_MAX];
-                snprintf(outpath, sizeof(outpath),
-                         "./textures/hand/handx%d.png", idx + 1);
+                snprintf(outpath, sizeof(outpath), "./textures/hand/handx%d.png", idx + 1);
                 stbi_write_png(outpath, slice_w, slice_h,
                                4, slice, slice_w * 4);
                 free(slice);

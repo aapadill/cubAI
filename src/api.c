@@ -40,10 +40,19 @@ unsigned char *base64_decode(const char *data, size_t *out_len) {
     if (!decoded_data) return NULL;
 
     for (size_t i = 0, j = 0; i < input_length;) {
-        uint32_t sextet_a = data[i] == '=' ? 0 & i++ : decoding_table[(unsigned char)data[i++]];
-        uint32_t sextet_b = data[i] == '=' ? 0 & i++ : decoding_table[(unsigned char)data[i++]];
-        uint32_t sextet_c = data[i] == '=' ? 0 & i++ : decoding_table[(unsigned char)data[i++]];
-        uint32_t sextet_d = data[i] == '=' ? 0 & i++ : decoding_table[(unsigned char)data[i++]];
+        uint32_t sextet_a;
+        uint32_t sextet_b;
+        uint32_t sextet_c;
+        uint32_t sextet_d;
+
+        if (data[i] == '=') { sextet_a = 0; i++; }
+        else { sextet_a = decoding_table[(unsigned char)data[i++]]; }
+        if (data[i] == '=') { sextet_b = 0; i++; }
+        else { sextet_b = decoding_table[(unsigned char)data[i++]]; }
+        if (data[i] == '=') { sextet_c = 0; i++; }
+        else { sextet_c = decoding_table[(unsigned char)data[i++]]; }
+        if (data[i] == '=') { sextet_d = 0; i++; }
+        else { sextet_d = decoding_table[(unsigned char)data[i++]]; }
 
         uint32_t triple = (sextet_a << 18) + (sextet_b << 12) + (sextet_c << 6) + sextet_d;
 
@@ -86,7 +95,9 @@ int download_image(const char *url, const char *filename) {
     CURLcode res = curl_easy_perform(curl);
     fclose(fp);
     curl_easy_cleanup(curl);
-    return (res == CURLE_OK) ? 0 : 3;
+    if (res == CURLE_OK)
+        return 0;
+    return 3;
 }
 
 int generate_with_gpt_image(const char *prompt, const char *save_path) {
@@ -129,8 +140,12 @@ int generate_with_gpt_image(const char *prompt, const char *save_path) {
     printf("HTTP status: %ld\nRaw JSON response:\n%s\n", http_code, chunk.response);
 
     if (res != CURLE_OK || http_code != 200) {
-        fprintf(stderr, "❌ Request failed: %s\n",
-                res != CURLE_OK ? curl_easy_strerror(res) : "non-OK HTTP status");
+        {
+            const char *err_msg = "non-OK HTTP status";
+            if (res != CURLE_OK)
+                err_msg = curl_easy_strerror(res);
+            fprintf(stderr, "❌ Request failed: %s\n", err_msg);
+        }
         goto cleanup;
     }
 
@@ -140,8 +155,12 @@ int generate_with_gpt_image(const char *prompt, const char *save_path) {
     cJSON *err = cJSON_GetObjectItem(json, "error");
     if (err) {
         cJSON *msg = cJSON_GetObjectItem(err, "message");
-        fprintf(stderr, "❌ API error: %s\n",
-                msg && cJSON_IsString(msg) ? msg->valuestring : "unknown");
+        {
+            const char *err_msg = "unknown";
+            if (msg && cJSON_IsString(msg))
+                err_msg = msg->valuestring;
+            fprintf(stderr, "❌ API error: %s\n", err_msg);
+        }
         cJSON_Delete(json); goto cleanup;
     }
 

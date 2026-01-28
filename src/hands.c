@@ -83,8 +83,10 @@ void draw_hud_hands(t_data *data)
     int new_width  = hand_tex->width  * scale_factor;
     int new_height = hand_tex->height * scale_factor;
 
-    int pos_x = (data->width  - new_width)  / 2;
-    int pos_y =  data->height - new_height;
+    int pos_x = (data->width  - new_width)  / 2 + (int)data->camera.hud_offset_x;
+    int pos_y =  data->height - new_height + (int)data->camera.hud_offset_y;
+    double half_w = data->width / 2.0;
+    double roll = data->camera.hud_roll;
 
     for (int y = 0; y < new_height; ++y) {
         for (int x = 0; x < new_width; ++x) {
@@ -98,8 +100,14 @@ void draw_hud_hands(t_data *data)
             if (alpha == 0)
                 continue;
 
+            int dst_x = pos_x + x;
+            int dst_y = pos_y + y;
+            if (half_w > 0.0)
+                dst_y += (int)(roll * ((dst_x - half_w) / half_w));
+            if (dst_x < 0 || dst_x >= data->width || dst_y < 0 || dst_y >= data->height)
+                continue;
             color = simple_shading(color, 1.0f);
-            mlx_put_pixel(data->image, pos_x + x, pos_y + y, color);
+            mlx_put_pixel(data->image, dst_x, dst_y, color);
         }
     }
 }
