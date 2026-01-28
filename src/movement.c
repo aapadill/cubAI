@@ -6,7 +6,7 @@
 /*   By: djelacik <djelacik@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/12/31 15:40:09 by djelacik          #+#    #+#             */
-/*   Updated: 2025/04/14 10:20:25 by aapadill         ###   ########.fr       */
+/*   Updated: 2026/01/28 01:57:32 by aapadill         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -258,11 +258,7 @@ void *ai_worker(void *arg)
 
 	char prompt[1024];
 	snprintf(prompt, sizeof(prompt),
-		"generate sprite sheet (shooting sequence) of 4 frames: "
-		"pixel art, retro first-person view of a hand holding a %s, "
-		"background is black, no transparency, 1990s video game style. "
-		"The whole sequence will be compressed in a single sheet of 4 "
-		"frames on a 2x2 grid. 1024x1024, with visible recoil movement.",
+		"generate sprite sheet (shooting sequence) of 4 frames: pixel art, retro first-person view of a hand holding a %s, background is black, no transparency, 1990s video game style. The whole sequence will be compressed in a single sheet of 4 frames on a 2x2 grid. 1024x1024, with visible recoil movement",
 		object_name
 	);
 	generate_with_gpt_image(prompt, sheet_path);
