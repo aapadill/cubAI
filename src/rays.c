@@ -35,9 +35,9 @@ void	draw_walls_and_sprites(t_data *data)
 		ray_dir_x = dir_x + plane_x * camera_x;
 		ray_dir_y = dir_y + plane_y * camera_x;
 		draw_wall_column(data, ray_dir_x, ray_dir_y, screen_x);
-		draw_sprite_column(data, screen_x, dir_x, dir_y, plane_x, plane_y);
 		screen_x++;
 	}
+	draw_sprites(data, dir_x, dir_y, plane_x, plane_y);
 }
 
 void	draw_wall_column(t_data *data, double ray_dir_x, double ray_dir_y, int screen_x)

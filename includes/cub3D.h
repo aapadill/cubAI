@@ -273,7 +273,7 @@ void	error_exit(char *msg);
 
 //sprites.c
 //void	draw_sprites(t_data *data);
-void 	draw_sprite_column(t_data *data, int x, double dir_x, double dir_y, double plane_x, double plane_y);
+void	draw_sprites(t_data *data, double dir_x, double dir_y, double plane_x, double plane_y);
 void	draw_hud_hands(t_data *data);
 void	shooting_animation(t_data *data);
 void call_chatgpt(char *prompt, t_data *data);
