@@ -526,6 +526,12 @@ int	parse_cubfile(char *filepath, t_data *data)
 		else
 		{
 			i = 0;
+			data->map.row_len = gc_alloc(map_vec.len * sizeof(int));
+			if (!data->map.row_len)
+			{
+				data->error_msg = "Map row length alloc failed";
+				status = 1;
+			}
 			while (i < map_vec.len)
 			{
 				data->map.grid[i] = *(char **)vec_get(&map_vec, i);
@@ -548,6 +554,8 @@ int	parse_cubfile(char *filepath, t_data *data)
 				}
 				/*should this be here?*/
 				row_len = ft_strlen(data->map.grid[i]);
+				if (!status)
+					data->map.row_len[i] = row_len;
 				if (row_len > data->map.width)
 					data->map.width = row_len;
 				i++;

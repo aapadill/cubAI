@@ -85,9 +85,8 @@ static void try_load_hands(t_data *data)
 static int can_move_to(t_data *data, double new_x, double new_y)
 {
 	// Check four diagonal directions
-	double diag_offset;
+	const double	diag_offset = COLLISION_LIMIT * 0.7071067811865476;
 
-	diag_offset = COLLISION_LIMIT / sqrt(2);
 	// Check four cardinal directions
 	if (is_wall(data, new_x + COLLISION_LIMIT, new_y)) // Right
 		return 0;
@@ -178,12 +177,13 @@ static void handle_enemy(t_data *data)
     double dx = data->player.x - *ex;
     double dy = data->player.y - *ey;
 
-    double dist = sqrt(dx*dx + dy*dy);
-    if (dist < 2.0 && dist > 0.5)  // only chase if “close enough” and avoid div0
+    double dist2 = dx * dx + dy * dy;
+    if (dist2 < 4.0 && dist2 > 0.25)  // only chase if “close enough” and avoid div0
     {
         // normalize (dx,dy) and scale by ENEMY_SPEED
-        double nx = dx / dist;
-        double ny = dy / dist;
+        double inv_dist = 1.0 / sqrt(dist2);
+        double nx = dx * inv_dist;
+        double ny = dy * inv_dist;
 
         // move the enemy
         *ex += nx * ENEMY_SPEED;

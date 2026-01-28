@@ -134,6 +134,7 @@ typedef struct s_sprite {
 
 typedef struct s_map {
 	char	**grid;
+	int		*row_len;
 	int		width;
 	int		height;
 }	t_map;

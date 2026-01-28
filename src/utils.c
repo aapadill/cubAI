@@ -35,10 +35,10 @@ void update_doors(t_data *data)
 		t_door *door = &data->doors[i];
 		double dx = door->x + 0.5 - data->player.x;
 		double dy = door->y + 0.5 - data->player.y;
-		double distance = sqrt(dx * dx + dy * dy);
+		double dist2 = dx * dx + dy * dy;
 
 		// If player is close enough and roughly facing the door, trigger it
-		if (distance < 3) /* adjust threshold */
+		if (dist2 < 9.0) /* adjust threshold */
 		{
 			// Check the angle between player direction and the door
 			// (For simplicity, you might compare the player's angle with the angle to the door)
@@ -62,7 +62,7 @@ void update_doors(t_data *data)
 		else if (door->state == OPEN)
 		{
 			// Optionally, if the player moves away, start closing the door
-			if (distance > 3)
+			if (dist2 > 9.0)
 				door->state = CLOSING;
 		}
 		else if (door->state == CLOSING)
@@ -82,12 +82,17 @@ static char	get_map_cell(t_data *data, double x, double y)
 {
 	int	xi;
 	int	yi;
+	int	row_len;
 
 	xi = (int)x;
 	yi = (int)y;
 	if (yi < 0 || yi >= data->map.height)
 		return ('1');
-	if (xi < 0 || xi >= (int)ft_strlen(data->map.grid[yi]))
+	if (data->map.row_len)
+		row_len = data->map.row_len[yi];
+	else
+		row_len = ft_strlen(data->map.grid[yi]);
+	if (xi < 0 || xi >= row_len)
 		return ('1');
 	return (data->map.grid[yi][xi]);
 }
@@ -123,17 +128,26 @@ void	draw_floor_and_ceiling(t_data *data)
 {
 	int	x;
 	int	y;
+	int	half;
 
+	half = data->height / 2;
 	y = 0;
+	while (y < half)
+	{
+		x = 0;
+		while (x < data->width)
+		{
+			mlx_put_pixel(data->image, x, y, data->ceiling);
+			x++;
+		}
+		y++;
+	}
 	while (y < data->height)
 	{
 		x = 0;
 		while (x < data->width)
 		{
-			if (y < data->height / 2)
-				mlx_put_pixel(data->image, x, y, data->ceiling); // Katon väri
-			else
-				mlx_put_pixel(data->image, x, y, data->floor); // Lattian väri
+			mlx_put_pixel(data->image, x, y, data->floor);
 			x++;
 		}
 		y++;
