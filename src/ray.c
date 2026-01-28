@@ -12,7 +12,7 @@
 
 #include "cub3D.h"
 
-void	calculate_ray_data(t_data *data, double ray_angle, t_ray *ray)
+void	calculate_ray_data(t_data *data, double ray_dir_x, double ray_dir_y, t_ray *ray)
 {
 	double delta_dist_x;
 	double delta_dist_y;
@@ -23,8 +23,8 @@ void	calculate_ray_data(t_data *data, double ray_angle, t_ray *ray)
 	int step_x;
 	int step_y;
 
-	ray->dir_x = cos(ray_angle);
-	ray->dir_y = sin(ray_angle);
+	ray->dir_x = ray_dir_x;
+	ray->dir_y = ray_dir_y;
 
 	map_x = (int)data->player.x;
 	map_y = (int)data->player.y;
@@ -102,6 +102,5 @@ void	calculate_ray_data(t_data *data, double ray_angle, t_ray *ray)
 		ray->hit_x = data->player.x + ray->distance * ray->dir_x;
 		ray->wall_x = ray->hit_x - floor(ray->hit_x);
 	}
-	ray->distance = ray->distance * cos(ray_angle - data->player.angle); //correct distance?
 	ray->texture = get_wall_texture(data, ray);
 }

@@ -240,11 +240,11 @@ void			draw_wall_texture(t_data *data, t_ray *ray, int screen_x, int vis_start_y
 
 //ray.c
 double	calculate_distance(t_data *data, double angle, t_ray *ray);
-void	calculate_ray_data(t_data *data, double angle, t_ray *ray);
+void	calculate_ray_data(t_data *data, double ray_dir_x, double ray_dir_y, t_ray *ray);
 
 //rays.c
 double	calculate_corrected_distance(double distance, double ray_angle, double player_angle);
-void	draw_wall_column(t_data *data, double angle, int screen_x);
+void	draw_wall_column(t_data *data, double ray_dir_x, double ray_dir_y, int screen_x);
 //void	draw_walls(t_data *data);
 void	draw_walls_and_sprites(t_data *data);
 
