@@ -86,21 +86,16 @@ void draw_hud_hands(t_data *data)
     int pos_x = (data->width  - new_width)  / 2;
     int pos_y =  data->height - new_height;
 
-    const uint8_t BLACK_THRESHOLD = 16;
     for (int y = 0; y < new_height; ++y) {
         for (int x = 0; x < new_width; ++x) {
             int src_x = x / scale_factor;
             int src_y = y / scale_factor;
 
             uint32_t color = get_texture_color(hand_tex, src_x, src_y);
-            uint8_t r = (color >> 16) & 0xFF;
-            uint8_t g = (color >>  8) & 0xFF;
-            uint8_t b =  color        & 0xFF;
+            uint8_t alpha = (color >> 24) & 0xFF;
 
-            // skip “almost black” pixels
-            if (r < BLACK_THRESHOLD &&
-                g < BLACK_THRESHOLD &&
-                b < BLACK_THRESHOLD)
+            // skip fully transparent pixels
+            if (alpha == 0)
                 continue;
 
             color = simple_shading(color, 1.0f);

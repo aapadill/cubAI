@@ -99,16 +99,18 @@ int generate_with_gpt_image(const char *prompt, const char *save_path) {
     headers = curl_slist_append(headers, "Content-Type: application/json");
     headers = curl_slist_append(headers, auth_hdr);
 
-    // Build request body (request smaller quality to reduce output token usage)
-    char body[1024];
+    // Build request body (transparent background support)
+    char body[1400];
     snprintf(body, sizeof(body),
         "{"
           "\"model\": \"gpt-image-1\","
           "\"prompt\": \"%s\","
           "\"n\": 1,"
           "\"size\": \"1024x1024\","
-          "\"quality\": \"auto\""   // lower quality => fewer output tokens
-        "}", prompt
+          "\"quality\": \"low\","
+          "\"background\": \"transparent\""
+        "}",
+        prompt
     );
 
     struct memory chunk = { .capacity = 4096, .size = 0 };

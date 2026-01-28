@@ -107,9 +107,10 @@ void draw_sprite_column(t_data *data, int x, double dir_x, double dir_y, double 
             int d = y * 256 - data->height * 128 + sp->sprite_height * 128;
             int tex_y = ((d * tex->height) / sp->sprite_height) / 256;
             uint32_t color = get_texture_color(tex, tex_x, tex_y);
+            uint8_t alpha = (color >> 24) & 0xFF;
 
-            // Only draw non-black pixels and only if the sprite pixel is in front of the wall
-            if ((color & 0x00FFFFFF) != 0 && sp->transform_y < data->zBuffer[x])
+            // Draw only if pixel is visible (alpha) and sprite is in front
+            if (alpha != 0 && sp->transform_y < data->zBuffer[x])
             {
 				uint32_t fixed_color = simple_shading(color, sp->transform_y);
                 mlx_put_pixel(data->image, x, y, fixed_color);
