@@ -51,6 +51,9 @@ This project uses the OpenAI API for AI-assisted asset generation. You need to p
 
 **Keep your API key private and never commit it.**
 
+### Token/quality tip
+If you need to reduce output-token usage from image generations, set the image `quality` to `"low"` in `src/movement.c` (search for the image generation JSON). Be aware this can noticeably lower image fidelity. More about image params: https://platform.openai.com/docs/api-reference/images
+
 
 ---
 ## Building

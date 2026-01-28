@@ -107,7 +107,7 @@ int generate_with_gpt_image(const char *prompt, const char *save_path) {
           "\"prompt\": \"%s\","
           "\"n\": 1,"
           "\"size\": \"1024x1024\","
-          "\"quality\": \"low\""   // lower quality => fewer output tokens
+          "\"quality\": \"auto\""   // lower quality => fewer output tokens
         "}", prompt
     );
 
