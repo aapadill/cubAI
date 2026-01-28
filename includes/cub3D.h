@@ -49,6 +49,8 @@
 #define MIN_WIDTH 384
 #define MIN_HEIGHT 216
 #define MINIMAP_SCALE 0.15
+#define MINIMAP_TILES 11
+#define MINIMAP_PADDING 8
 #define TILE_SIZE 64
 #define STEP_SIZE 0.5
 #define FOV M_PI / 3
